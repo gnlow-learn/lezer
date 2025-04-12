@@ -1,6 +1,6 @@
 import { parser } from "./parser.js"
 
-console.log(parser.parse(`
+const tree = parser.parse(`
     fun cloop() {
         if (rdrec() == 0) {
             endfil()
@@ -16,4 +16,14 @@ console.log(parser.parse(`
 
         }
     }
-`))
+`)
+
+let depth = 0
+tree.iterate({
+    enter(node) {
+        console.log("| ".repeat(depth++) + node.name)
+    },
+    leave(node) {
+        depth--
+    }
+})
