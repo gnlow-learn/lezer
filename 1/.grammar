@@ -15,7 +15,7 @@ Statement {
 }
 
 FunctionDef {
-  kw<"fun"> Identifier "(" ")" Block
+  kw<"fun"> Identifier "(" (Expression ("," Expression)*)? ")" Block
 }
 
 IfStatement {
@@ -54,9 +54,10 @@ FunctionCall {
   Identifier { $[a-zA-Z_] $[a-zA-Z0-9_]* }
   Number { $[0-9]+ }
   space { $[ \t\n]+ }
-  "="
+  
+  assign { "=" }
   "=="
-  ","
+  comma { "," }
   lparen { "(" }
   rparen { ")" }
   lbrace { "{" }

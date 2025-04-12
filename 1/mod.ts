@@ -11,7 +11,7 @@ const tree = parser.parse(`
 
     buffer = resb(4096)
 
-    fun endfil() {
+    fun endfil(a, b) {
         if (buffer == eof) {
 
         }
