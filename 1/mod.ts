@@ -1,4 +1,9 @@
+import {
+    SyntaxNodeRef,
+    SyntaxNode,
+} from "https://esm.sh/@lezer/common@1.2.3"
 import { parser } from "./parser.js"
+import { Expression, FunctionCall } from "./parser.terms.js";
 
 const code = `
 print("Hello, World!")
@@ -20,48 +25,65 @@ console.log("\n")
 
 const getVarName =
 (n: number) => {
-    if (n == 0) return "a"
+    if (n == 0) return "vva"
     let res = ""
     while (n > 0) {
         res = String.fromCharCode(97 + (n % 26)) + res
         n = Math.floor(n / 26)
     }
-    return res
+    return "vv"+res
 }
 
 const stack: string[] = []
 const table: string[] = []
 
-const pstack: string[] = []
-
 const addSymbol =
 (str: string) => {
-    table.push(`vv${getVarName(table.length)}\t${str}`)
+    table.push(`${getVarName(table.length)}\t${str}`)
+}
+
+const terminal =
+(node: SyntaxNodeRef | SyntaxNode) => {
+    return ({
+        Identifier() {
+            const content = code.slice(node.from, node.to)
+            if (node.node.parent?.name == "Expression") {
+                stack.push(content)
+            }
+            return content
+        },
+        String() {
+            const content = code.slice(node.from+1, node.to-1)
+            const varName = getVarName(table.length)
+            if (node.node.parent?.name == "Expression") {
+                addSymbol(`BYTE\tC'${content}'`)
+            }
+            return "#"+varName
+        },
+        Expression() {
+            return terminal(node.node.firstChild!)
+        }
+    } as Record<string, () => string>)[node.name]?.()
 }
 
 tree.iterate({
     enter(node) {
         ({
             FunctionCall() {
-                console.log(node.node.firstChild.name)
-            },
+                const funcName = terminal(node.node.getChild("Identifier")!)
+                const params = node.node.getChildren("Expression").map(terminal)
+
+                params.forEach(param => {
+                    stack.push(`\tLDA\t${param}`)
+                    stack.push(`\tJSUB\tpush`)
+                })
+                stack.push(`\tJSUB\tpushr`)
+                stack.push(`\tJSUB\t${funcName}`)
+            }
         } as Record<string, () => void>)[node.name]?.()
     },
     leave(node) {
-        ({
-            Identifier() {
-                const content = code.slice(node.from, node.to)
-                stack.push(content)
-            },
-            String() {
-                const content = code.slice(node.from+1, node.to-1)
-                addSymbol(`BYTE\tC'${content}'`)
-            },
 
-            FunctionCall() {
-
-            },
-        } as Record<string, () => void>)[node.name]?.()
     }
 })
 

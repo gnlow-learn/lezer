@@ -48,7 +48,7 @@ BinaryExpression {
 }
 
 FunctionCall {
-  FunctionName { Identifier !call } "(" (Expression ("," Expression)*)? ")"
+  Identifier !call"(" (Expression ("," Expression)*)? ")"
 }
 
 @skip {} {
