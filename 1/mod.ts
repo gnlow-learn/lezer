@@ -14,7 +14,7 @@ const tree = parser.parse(code)
 let depth = 0
 tree.iterate({
     enter(node) {
-        console.log("| ".repeat(depth++) + node.name)
+        console.log(". ".repeat(depth+++1) + node.name)
     },
     leave(node) {
         depth--
@@ -61,7 +61,7 @@ const terminal =
             const content = code.slice(node.from+1, node.to-1)
             const varName = getVarName(table.length)
             if (node.node.parent?.name == "Expression") {
-                addSymbol(`BYTE\tC'${content}'`)
+                addSymbol(`BYTE\tC'${content};'`)
             }
             return "#"+varName
         },
@@ -89,4 +89,82 @@ tree.iterate({
     },
 })
 
-console.log(stack.concat(table).join("\n"))
+const init =
+`	LDA	#myst
+	JSUB	stinit
+	JSUB	stinitr`
+
+const std =
+`
+... stdio ...
+print	JSUB	pop
+	STA	prp
+ploop	TD	#1
+	JEQ	ploop
+	LDCH	@prp
+	COMP	#0x3B
+	JEQ	popr
+	WD	#1
+	LDA	prp
+	ADD	#1
+	STA	prp
+	J	ploop
+
+prp	RESW	1
+
+... stdlib ...
+myst	RESW	100
+...
+stinit	STA	sp
+	RSUB
+
+push	STA	@sp
+	LDA	sp
+	ADD	#3
+	STA	sp
+	RSUB
+
+pop	LDA	sp
+	SUB	#3
+	STA	sp
+	LDA	@sp
+	RSUB
+
+sp	RESW	1
+
+...
+stinitr	LDA	#retadr
+	STA	spr
+	RSUB
+
+pushr	STL	@spr
+	LDA	@spr
+	ADD	#3
+	STA	@spr
+
+	LDA	spr
+	ADD	#3
+	STA	spr
+	RSUB
+
+popr	LDA	spr
+	SUB	#3
+	STA	spr
+	LDL	@spr
+	RSUB
+
+spr	RESW	1
+retadr	RESW	100
+`
+
+console.log([
+    "prog\tSTART\t0",
+    init,
+    "\n... main ...",
+    ...stack,
+    "halt\tJ\thalt",
+    "\n... table ...",
+    ...table,
+    std,
+    "\tEND\tprog",
+].join("\n"))
