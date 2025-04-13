@@ -37,6 +37,11 @@ const getVarName =
 const stack: string[] = []
 const table: string[] = []
 
+const pushInst =
+(label: string, op: string, param: string) => {
+    stack.push(label+"\t"+op+"\t"+param)
+}
+
 const addSymbol =
 (str: string) => {
     table.push(`${getVarName(table.length)}\t${str}`)
@@ -74,17 +79,14 @@ tree.iterate({
                 const params = node.node.getChildren("Expression").map(terminal)
 
                 params.forEach(param => {
-                    stack.push(`\tLDA\t${param}`)
-                    stack.push(`\tJSUB\tpush`)
+                    pushInst("", "LDA", param)
+                    pushInst("", "JSUB", "push")
                 })
-                stack.push(`\tJSUB\tpushr`)
-                stack.push(`\tJSUB\t${funcName}`)
+                pushInst("", "JSUB", "pushr")
+                pushInst("", "JSUB", funcName)
             }
         } as Record<string, () => void>)[node.name]?.()
     },
-    leave(node) {
-
-    }
 })
 
 console.log(stack.concat(table).join("\n"))
